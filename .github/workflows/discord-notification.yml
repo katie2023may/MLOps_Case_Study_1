@@ -1,0 +1,17 @@
+name: Discord Notification
+
+on:
+  push:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }} # Make sure to set this Webhook URL in Github Secrets!
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d "{\"content\": \"A new commit was pushed to the main branch by $GITHUB_ACTOR. :smile: Beards rock!\"}" \
+          $DISCORD_WEBHOOK_URL

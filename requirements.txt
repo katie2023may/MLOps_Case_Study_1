@@ -1,0 +1,14 @@
+numpy
+opencv-python
+Pillow
+python-dotenv
+torch
+gradio
+huggingface_hub
+
+# Optional dependencies for advanced models
+# Uncomment as needed:
+# transformers  # For Falcon and other transformer models
+# chess  # For Stockfish engine integration
+# accelerate  # For faster transformer loading
+# bitsandbytes  # For quantized models
