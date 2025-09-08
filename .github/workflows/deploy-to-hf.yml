@@ -3,7 +3,7 @@ name: Sync to Hugging Face Space
 on:
   push:
     branches:
-      - main  # or your branch of choice
+      - katies_branch  # or your branch of choice
 
 jobs:
   deploy:
