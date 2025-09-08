@@ -21,7 +21,7 @@ jobs:
           cd hf_space
           git add .
           git commit -m "Update from GitHub Actions" || echo "No changes to commit"
-          git push https://USER:$HF_TOKEN@huggingface.co/spaces/chucey/chessboard-recognizer main
+          git push https://chucey:$HF_TOKEN@huggingface.co/spaces/chucey/chessboard-recognizer main
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           USER: ${{ github.actor }}
