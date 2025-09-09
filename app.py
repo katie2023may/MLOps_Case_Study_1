@@ -114,8 +114,8 @@ def predict_image(image_tensor):
     use_local_model is set to True
     use HF API otherwise"""
         
-    model = load_model(MODEL_PATH)
-    print("Model loaded successfully.")
+    # Use the globally loaded model
+    #global model
     image_tensor = image_tensor.to(device)  # Move image to the same device as the model
     with torch.no_grad():  # Disable gradient computation during inference
         outputs = model(image_tensor)  # Forward pass
@@ -123,26 +123,44 @@ def predict_image(image_tensor):
     return predicted.item()
     
 def analyze_fen_with_api(fen: str) -> str:
+    # Check if API token is available
+    if not hf_token:
+        return "API analysis unavailable: No HF_Token found in environment variables. Please set your Hugging Face token in the .env file."
+    
     API_URL = "https://router.huggingface.co/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {hf_token}",
     }
 
     def query(payload):
-        response = requests.post(API_URL, headers=headers, json=payload)
-        return response.json()
+        try:
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            return {"error": f"Request failed: {str(e)}"}
 
-    response = query({
-        "messages": [
-            {
-                "role": "user",
-                "content": f"analyze this FEN: {fen}"
-            }
-        ],
-        "model": "Qwen/Qwen3-Coder-480B-A35B-Instruct:novita"
-    })
+    try:
+        response = query({
+            "messages": [
+                {
+                    "role": "user",
+                    "content": f"analyze this FEN: {fen}"
+                }
+            ],
+            "model": "Qwen/Qwen3-Coder-480B-A35B-Instruct:novita"
+        })
 
-    return response['choices'][0]['message']['content']
+        if "error" in response:
+            return f"API Error: {response['error']}"
+        
+        if "choices" not in response:
+            return f"Unexpected API response format: {response}"
+        
+        return response['choices'][0]['message']['content']
+    
+    except Exception as e:
+        return f"Error analyzing FEN with API: {str(e)}"
 
 #     client = InferenceClient(
 #     provider="novita",
@@ -421,8 +439,9 @@ MODEL_PATH = "model_100.pth"  # Replace with your actual model path
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"Model file '{MODEL_PATH}' not found. Please ensure the path is correct.")
 
-# model = load_model(MODEL_PATH)
-# print("Model loaded successfully.")
+# Load the model globally once
+model = load_model(MODEL_PATH)
+print("Model loaded successfully.")
 
 def gradio_predict(image):
     fen = process_image_and_generate_fen(image)
@@ -465,7 +484,7 @@ iface = gr.Interface(
         ["example2.png"],
         ["example3.png"]
     ],
-    allow_flagging="never"  # Optional: Disable flagging if not needed,
+    flagging_mode="never"  # Updated parameter name
 
 )
 
