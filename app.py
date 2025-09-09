@@ -10,7 +10,11 @@ import urllib.parse
 from dotenv import find_dotenv, load_dotenv
 from huggingface_hub import InferenceClient
 
-"Hello world we did it!!!"
+# FIXME: Add these imports when implementing local LLM move prediction
+# import chess
+# import chess.engine  
+# from transformers import pipeline
+
 
 # dotenv path
 dotenv_path = find_dotenv()
@@ -125,8 +129,33 @@ def predict_image(image_tensor, local_model:bool):
             _, predicted = torch.max(outputs.data, 1)  # Get the predicted class index
         return predicted.item()
     else:
-        ###Need some help here
-        pass
+        # FIXME: Fix the API implementation - current code has undefined variables
+        try:
+            # Convert tensor to PIL Image for API
+            image_array = image_tensor.squeeze().numpy() * 255
+            image_pil = Image.fromarray(image_array.astype(np.uint8))
+            
+            # FIXME: Replace with actual Hugging Face model for chess piece classification
+            client = InferenceClient(model="FIXME-chess-piece-classification-model", token=hf_token)
+            
+            # FIXME: Use proper image classification API call
+            result = client.image_classification(image_pil)
+            
+            # FIXME: Map API result to your label indices (0-12)
+            # This depends on your API model's output format
+            predicted_class = 0  # Placeholder
+            return predicted_class
+            
+        except Exception as e:
+            # FIXME: Add proper error logging for production
+            print(f"API prediction error: {e}, falling back to local model")
+            # Fallback to local model
+            model = load_model(MODEL_PATH)
+            image_tensor = image_tensor.to(device)
+            with torch.no_grad():
+                outputs = model(image_tensor)
+                _, predicted = torch.max(outputs.data, 1)
+            return predicted.item()
 
 # Function to convert the board to FEN
 def generate_fen(board_matrix):
@@ -148,6 +177,62 @@ def generate_fen(board_matrix):
     # Ensure ranks are ordered from 8 to 1
     fen = "/".join(fen_rows) + " w KQkq - 0 1"  # Default values for active color, castling, en passant, etc.
     return fen
+
+# FIXME: Add move prediction functions after generate_fen function
+def predict_best_move_api(fen):
+    """Use API to predict best move from FEN"""
+    try:
+        # FIXME: Replace with actual chess move prediction model
+        client = InferenceClient(model="FIXME-chess-move-model", token=hf_token)
+        
+        # FIXME: Optimize this prompt for better chess move prediction
+        prompt = f"Given this chess position in FEN notation: {fen}\nWhat is the best move? Reply with only the move in algebraic notation."
+        
+        # FIXME: Adjust these parameters based on model requirements
+        response = client.text_generation(
+            prompt=prompt,
+            max_new_tokens=50,
+            temperature=0.1,
+            return_full_text=False
+        )
+        
+        # FIXME: Improve move extraction logic based on actual model output format
+        move = response.strip().split()[0] if response else "No move found"
+        return move
+    except Exception as e:
+        # FIXME: Add proper error logging for production
+        print(f"API move prediction error: {e}")
+        return "e4"  # FIXME: Replace with better fallback move
+
+def predict_best_move_local(fen):
+    """Use local LLM to predict best move from FEN"""
+    try:
+        # FIXME: Implement local LLM for move prediction (options below)
+        # Option 1: Use transformers library with local model
+        # from transformers import pipeline
+        # generator = pipeline("text-generation", model="FIXME-local-chess-model")
+        
+        # Option 2: Use chess engine like Stockfish
+        # import chess
+        # import chess.engine
+        # engine = chess.engine.SimpleEngine.popen_uci("FIXME-stockfish-path")
+        
+        # FIXME: Replace this placeholder with actual local LLM implementation
+        # For now, returning a placeholder
+        return "Nf3"  # FIXME: Implement actual local move prediction
+        
+    except Exception as e:
+        # FIXME: Add proper error logging for production
+        print(f"Local move prediction error: {e}")
+        return "e4"  # FIXME: Replace with better fallback move
+
+def predict_best_move(fen, use_api=True):
+    """Router function to choose between API and local move prediction"""
+    if use_api:
+        return predict_best_move_api(fen)
+    else:
+        return predict_best_move_local(fen)
+
 
 # Gradient and Line Detection Functions
 def gradientx(img):
@@ -380,53 +465,77 @@ def process_image_and_generate_fen(image):
         return "Failed to detect a valid chessboard in the image."
 
 # Initialize and load the model once
-MODEL_PATH = "model_100.pth"  # Replace with your actual model path
+MODEL_PATH = "model_100.pth"  # FIXME Replace with your actual model path
+
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"Model file '{MODEL_PATH}' not found. Please ensure the path is correct.")
 
 # model = load_model(MODEL_PATH)
 # print("Model loaded successfully.")
 
-def gradio_predict(image):
-    fen = process_image_and_generate_fen(image)
-    if fen.startswith("Failed"):
-        # Return the error message as-is in Markdown
-        return f"**Error:** {fen}"
+def gradio_predict(image, fen_input, use_api_toggle):
+    """Main function that handles both image processing and move prediction"""
+    
+    # Determine which FEN to use
+    if fen_input and fen_input.strip():
+        # Use direct FEN input
+        fen = fen_input.strip()
+        processing_method = "Direct FEN Input"
     else:
-        # URL-encode the FEN string to ensure it's safe for URLs
-        fen_encoded = urllib.parse.quote(fen)
+        # Process image to get FEN
+        if image is None:
+            return "**Error:** Please provide either an image or a FEN string."
         
-        # Create URLs for Lichess and Chess.com analysis with the encoded FEN
-        lichess_url = f"https://lichess.org/editor/{fen_encoded}"
-        chesscom_url = f"https://www.chess.com/analysis?fen={fen_encoded}"
+        # FIXME: Set the global variable based on toggle
+        global use_local_model
+        use_local_model = not use_api_toggle  # Toggle inverts: True = use API, False = use local
         
-        # Create a Markdown-formatted string with the FEN and clickable links
-        markdown_output = f"""
-            **Generated FEN:**
-            {fen}
+        fen = process_image_and_generate_fen(image)
+        processing_method = "API Model" if use_api_toggle else "Local Model"
+        
+        if fen.startswith("Failed"):
+            return f"**Error:** {fen}"
+    
+    # Predict best move
+    # FIXME: Currently always uses API for move prediction - modify logic as needed
+    best_move = predict_best_move(fen, use_api=use_api_toggle)
+    
+    # Create output
+    fen_encoded = urllib.parse.quote(fen)
+    
+    markdown_output = f"""
+**Processing Method:** {processing_method}
 
-            
-            **Analyze Your Position:**
-            
-            - [🔍 Analyze on Lichess]({lichess_url})
-            - [🔍 Analyze on Chess.com]({chesscom_url})
-        """
-        return markdown_output
+**Generated FEN:** 
+`{fen}`
 
-# Create Gradio Interface
+**Predicted Best Move:** 
+`{best_move}`
+
+**Analysis Links:**
+- [Analyze on Lichess](https://lichess.org/analysis/{fen_encoded})
+- [Analyze on Chess.com](https://www.chess.com/analysis?fen={fen_encoded})
+"""
+    
+    return markdown_output
+
+# Create Gradio Interface with toggle
 iface = gr.Interface(
     fn=gradio_predict,
-    inputs=gr.Image(type="pil", label="Upload Chessboard Image"),
-    outputs=gr.Markdown(label="FEN and Analysis Links"),  # Changed from gr.Textbox to gr.Markdown
-    title="Chessboard to FEN Converter",
-    description="Upload an image of a chessboard, and the system will generate the corresponding FEN notation along with links to analyze the position on Lichess and Chess.com.",
-    examples=[
-        ["example1.png"],
-        ["example2.png"],
-        ["example3.png"]
+    inputs=[
+        gr.Image(type="pil", label="Upload Chessboard Image (Optional)"),
+        gr.Textbox(label="Or Enter FEN Directly (Optional)", placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
+        gr.Checkbox(label="Use API for Processing", value=True)  # FIXME: Set default API usage preference
     ],
-    allow_flagging="never"  # Optional: Disable flagging if not needed
+    outputs=gr.Markdown(label="Chess Analysis"),
+    title="Chess Position Analyzer",
+    description="Upload a chessboard image OR enter FEN notation. Toggle between API and local models. Get FEN notation and best move predictions.",
+    examples=[
+        [None, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", True],  # FIXME: Add real example FENs
+        [None, "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1", False],  # FIXME: Add more varied examples
+    ],
+    allow_flagging="never"
 )
 
-# Launch the interface
-iface.launch(share=True)
+# FIXME: Configure deployment settings for production
+iface.launch(share=True)  # FIXME: Set share=False for production, configure auth if needed
