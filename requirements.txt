@@ -3,3 +3,4 @@ opencv-python
 Pillow
 python-dotenv
 torch
+gradio
