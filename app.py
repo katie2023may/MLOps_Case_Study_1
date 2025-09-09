@@ -123,43 +123,43 @@ def predict_image(image_tensor):
     return predicted.item()
     
 def analyze_fen_with_api(fen: str) -> str:
-    API_URL = "https://router.huggingface.co/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {hf_token}",
-    }
+    # API_URL = "https://router.huggingface.co/v1/chat/completions"
+    # headers = {
+    #     "Authorization": f"Bearer {hf_token}",
+    # }
 
-    def query(payload):
-        response = requests.post(API_URL, headers=headers, json=payload)
-        return response.json()
+    # def query(payload):
+    #     response = requests.post(API_URL, headers=headers, json=payload)
+    #     return response.json()
 
-    response = query({
-        "messages": [
+    # response = query({
+    #     "messages": [
+    #         {
+    #             "role": "user",
+    #             "content": f"analyze this FEN: {fen}"
+    #         }
+    #     ],
+    #     "model": "Qwen/Qwen3-Coder-480B-A35B-Instruct:novita"
+    # })
+
+    # return response['choices'][0]['message']['content']
+
+    client = InferenceClient(
+    provider="novita",
+    api_key=os.environ["HF_TOKEN"],
+)
+
+    completion = client.chat.completions.create(
+        model="Qwen/Qwen3-Coder-480B-A35B-Instruct",
+        messages=[
             {
                 "role": "user",
                 "content": f"analyze this FEN: {fen}"
             }
         ],
-        "model": "Qwen/Qwen3-Coder-480B-A35B-Instruct:novita"
-    })
+    )
 
-    return response['choices'][0]['message']['content']
-
-#     client = InferenceClient(
-#     provider="novita",
-#     api_key=novita_key,
-# )
-
-#     completion = client.chat.completions.create(
-#         model="Qwen/Qwen3-Coder-480B-A35B-Instruct",
-#         messages=[
-#             {
-#                 "role": "user",
-#                 "content": f"analyze this FEN: {fen}"
-#             }
-#         ],
-#     )
-
-#     return (completion.choices[0].message)
+    return (completion.choices[0].message.content)
 
 
 
