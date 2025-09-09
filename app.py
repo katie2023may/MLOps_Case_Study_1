@@ -123,61 +123,43 @@ def predict_image(image_tensor):
     return predicted.item()
     
 def analyze_fen_with_api(fen: str) -> str:
-    # Check if API token is available
-    if not hf_token:
-        return "API analysis unavailable: No HF_Token found in environment variables. Please set your Hugging Face token in the .env file."
-    
-    API_URL = "https://router.huggingface.co/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {hf_token}",
-    }
+    # API_URL = "https://router.huggingface.co/v1/chat/completions"
+    # headers = {
+    #     "Authorization": f"Bearer {hf_token}",
+    # }
 
-    def query(payload):
-        try:
-            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            return {"error": f"Request failed: {str(e)}"}
+    # def query(payload):
+    #     response = requests.post(API_URL, headers=headers, json=payload)
+    #     return response.json()
 
-    try:
-        response = query({
-            "messages": [
-                {
-                    "role": "user",
-                    "content": f"analyze this FEN: {fen}"
-                }
-            ],
-            "model": "Qwen/Qwen3-Coder-480B-A35B-Instruct:novita"
-        })
+    # response = query({
+    #     "messages": [
+    #         {
+    #             "role": "user",
+    #             "content": f"analyze this FEN: {fen}"
+    #         }
+    #     ],
+    #     "model": "Qwen/Qwen3-Coder-480B-A35B-Instruct:novita"
+    # })
 
-        if "error" in response:
-            return f"API Error: {response['error']}"
-        
-        if "choices" not in response:
-            return f"Unexpected API response format: {response}"
-        
-        return response['choices'][0]['message']['content']
-    
-    except Exception as e:
-        return f"Error analyzing FEN with API: {str(e)}"
+    # return response['choices'][0]['message']['content']
 
-#     client = InferenceClient(
-#     provider="novita",
-#     api_key=novita_key,
-# )
+    client = InferenceClient(
+    provider="novita",
+    api_key=os.environ["HF_TOKEN"],
+)
 
-#     completion = client.chat.completions.create(
-#         model="Qwen/Qwen3-Coder-480B-A35B-Instruct",
-#         messages=[
-#             {
-#                 "role": "user",
-#                 "content": f"analyze this FEN: {fen}"
-#             }
-#         ],
-#     )
+    completion = client.chat.completions.create(
+        model="Qwen/Qwen3-Coder-480B-A35B-Instruct",
+        messages=[
+            {
+                "role": "user",
+                "content": f"analyze this FEN: {fen}"
+            }
+        ],
+    )
 
-#     return (completion.choices[0].message)
+    return (completion.choices[0].message.content)
 
 
 
