@@ -466,7 +466,7 @@ iface = gr.Interface(
         ["example2.png"],
         ["example3.png"]
     ],
-    flagging_mode="never"  # Updated parameter name
+    # flagging_mode="never"  # Updated parameter name
 
 )
 
