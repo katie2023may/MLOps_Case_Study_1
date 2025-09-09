@@ -114,8 +114,8 @@ def predict_image(image_tensor):
     use_local_model is set to True
     use HF API otherwise"""
         
-    model = load_model(MODEL_PATH)
-    print("Model loaded successfully.")
+    # Use the globally loaded model
+    #global model
     image_tensor = image_tensor.to(device)  # Move image to the same device as the model
     with torch.no_grad():  # Disable gradient computation during inference
         outputs = model(image_tensor)  # Forward pass
@@ -421,8 +421,9 @@ MODEL_PATH = "model_100.pth"  # Replace with your actual model path
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"Model file '{MODEL_PATH}' not found. Please ensure the path is correct.")
 
-# model = load_model(MODEL_PATH)
-# print("Model loaded successfully.")
+# Load the model globally once
+model = load_model(MODEL_PATH)
+print("Model loaded successfully.")
 
 def gradio_predict(image):
     fen = process_image_and_generate_fen(image)
@@ -465,7 +466,7 @@ iface = gr.Interface(
         ["example2.png"],
         ["example3.png"]
     ],
-    allow_flagging="never"  # Optional: Disable flagging if not needed,
+    flagging_mode="never"  # Updated parameter name
 
 )
 
