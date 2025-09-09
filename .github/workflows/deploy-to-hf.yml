@@ -25,3 +25,16 @@ jobs:
           git push https://katie2023may:$HF_TOKEN@huggingface.co/spaces/katie2023may/chessboard-recognizer main
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      - name: Notify Discord
+        if: always() # ensures it runs even if tests fail
+        run: |
+          payload='{
+            "embeds": [{
+              "title": "GitHub Action Complete",
+              "description": "Repository: **${{ github.repository }}**\nBranch: **${{ github.ref_name }}**\nStatus: **${{ job.status }}**",
+              "color": 3066993
+            }]
+          }'
+          curl -H "Content-Type: application/json" \
+              -d "$payload" \
+              ${{ secrets.DISCORD_WEBHOOK_URL }}
