@@ -9,10 +9,12 @@ import gradio as gr
 import urllib.parse
 from dotenv import find_dotenv, load_dotenv
 from huggingface_hub import InferenceClient
+
 # FIXME: Add these imports when implementing local LLM move prediction
 # import chess
 # import chess.engine  
 # from transformers import pipeline
+
 
 # dotenv path
 dotenv_path = find_dotenv()
@@ -230,6 +232,7 @@ def predict_best_move(fen, use_api=True):
         return predict_best_move_api(fen)
     else:
         return predict_best_move_local(fen)
+
 
 # Gradient and Line Detection Functions
 def gradientx(img):
@@ -463,6 +466,7 @@ def process_image_and_generate_fen(image):
 
 # Initialize and load the model once
 MODEL_PATH = "model_100.pth"  # FIXME Replace with your actual model path
+
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"Model file '{MODEL_PATH}' not found. Please ensure the path is correct.")
 
