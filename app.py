@@ -9,13 +9,13 @@ import gradio as gr
 import urllib.parse
 from dotenv import find_dotenv, load_dotenv
 from huggingface_hub import InferenceClient
+import requests
 
-# dotenv path
 dotenv_path = find_dotenv()
 load_dotenv(dotenv_path=dotenv_path)
 hf_token = os.getenv("HF_Token")
-
-use_local_model = True # determines whether to use the local model or not
+novita_key = os.getenv("Novita_key")
+# os.environ['HF_TOKEN'] = hf_token
 
 # Set device (use GPU if available, otherwise fallback to CPU)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -109,22 +109,78 @@ def prepare_image(image):
     return img_tensor
 
 # Predict the class of the image
-def predict_image(image_tensor, local_model:bool):
+def predict_image(image_tensor):
     """Predict the class of a single image using the loaded model if
     use_local_model is set to True
     use HF API otherwise"""
-    local_model=use_local_model
-    if local_model is True:
-        model = load_model(MODEL_PATH)
-        print("Model loaded successfully.")
-        image_tensor = image_tensor.to(device)  # Move image to the same device as the model
-        with torch.no_grad():  # Disable gradient computation during inference
-            outputs = model(image_tensor)  # Forward pass
-            _, predicted = torch.max(outputs.data, 1)  # Get the predicted class index
-        return predicted.item()
-    else:
-        ###Need some help here
-        pass
+        
+    # Use the globally loaded model
+    #global model
+    image_tensor = image_tensor.to(device)  # Move image to the same device as the model
+    with torch.no_grad():  # Disable gradient computation during inference
+        outputs = model(image_tensor)  # Forward pass
+        _, predicted = torch.max(outputs.data, 1)  # Get the predicted class index
+    return predicted.item()
+    
+def analyze_fen_with_api(fen: str) -> str:
+    # Check if API token is available
+    if not hf_token:
+        return "API analysis unavailable: No HF_Token found in environment variables. Please set your Hugging Face token in the .env file."
+    
+    API_URL = "https://router.huggingface.co/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {hf_token}",
+    }
+
+    def query(payload):
+        try:
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            return {"error": f"Request failed: {str(e)}"}
+
+    try:
+        response = query({
+            "messages": [
+                {
+                    "role": "user",
+                    "content": f"analyze this FEN: {fen}"
+                }
+            ],
+            "model": "Qwen/Qwen3-Coder-480B-A35B-Instruct:novita"
+        })
+
+        if "error" in response:
+            return f"API Error: {response['error']}"
+        
+        if "choices" not in response:
+            return f"Unexpected API response format: {response}"
+        
+        return response['choices'][0]['message']['content']
+    
+    except Exception as e:
+        return f"Error analyzing FEN with API: {str(e)}"
+
+#     client = InferenceClient(
+#     provider="novita",
+#     api_key=novita_key,
+# )
+
+#     completion = client.chat.completions.create(
+#         model="Qwen/Qwen3-Coder-480B-A35B-Instruct",
+#         messages=[
+#             {
+#                 "role": "user",
+#                 "content": f"analyze this FEN: {fen}"
+#             }
+#         ],
+#     )
+
+#     return (completion.choices[0].message)
+
+
+
 
 # Function to convert the board to FEN
 def generate_fen(board_matrix):
@@ -362,10 +418,11 @@ def process_image_and_generate_fen(image):
             resized = cv2.resize(square, (32, 32), interpolation=cv2.INTER_AREA)
 
             # Predict the piece on this square
+            
             image_tensor = prepare_image(resized)
-            predicted_class = predict_image(image_tensor, local_model=use_local_model)
+            predicted_class = predict_image(image_tensor)
             piece = labelIndex2Name(predicted_class)
-
+            
             board_matrix[row].append(piece)
 
         # Generate FEN from board_matrix
@@ -382,8 +439,9 @@ MODEL_PATH = "model_100.pth"  # Replace with your actual model path
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"Model file '{MODEL_PATH}' not found. Please ensure the path is correct.")
 
-# model = load_model(MODEL_PATH)
-# print("Model loaded successfully.")
+# Load the model globally once
+model = load_model(MODEL_PATH)
+print("Model loaded successfully.")
 
 def gradio_predict(image):
     fen = process_image_and_generate_fen(image)
@@ -400,7 +458,7 @@ def gradio_predict(image):
         
         # Create a Markdown-formatted string with the FEN and clickable links
         markdown_output = f"""
-            **Generated FEN:**
+            **Generated FEN from Local Model:**
             {fen}
 
             
@@ -409,22 +467,27 @@ def gradio_predict(image):
             - [🔍 Analyze on Lichess]({lichess_url})
             - [🔍 Analyze on Chess.com]({chesscom_url})
         """
-        return markdown_output
+        api_output = analyze_fen_with_api(fen)
+        return markdown_output, api_output
 
 # Create Gradio Interface
 iface = gr.Interface(
     fn=gradio_predict,
     inputs=gr.Image(type="pil", label="Upload Chessboard Image"),
-    outputs=gr.Markdown(label="FEN and Analysis Links"),  # Changed from gr.Textbox to gr.Markdown
+    outputs=[gr.Markdown(label="FEN and Analysis Links"),
+                        
+             gr.Textbox(label='API output')],  # Changed from gr.Textbox to gr.Markdown
     title="Chessboard to FEN Converter",
-    description="Upload an image of a chessboard, and the system will generate the corresponding FEN notation along with links to analyze the position on Lichess and Chess.com.",
+    description=f"Upload an image of a chessboard, and the system will generate the corresponding FEN notation along with links to analyze the position on Lichess and Chess.com using the local model\nThe system will also analyze the FEN using an API call from a LLM",
     examples=[
         ["example1.png"],
         ["example2.png"],
         ["example3.png"]
     ],
-    allow_flagging="never"  # Optional: Disable flagging if not needed
+    flagging_mode="never"  # Updated parameter name
+
 )
+
 
 # Launch the interface
 iface.launch(share=True)
