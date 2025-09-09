@@ -10,8 +10,6 @@ import urllib.parse
 from dotenv import find_dotenv, load_dotenv
 from huggingface_hub import InferenceClient
 
-"Hello world we did it!!!"
-
 # dotenv path
 dotenv_path = find_dotenv()
 load_dotenv(dotenv_path=dotenv_path)
