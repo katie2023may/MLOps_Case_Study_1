@@ -17,7 +17,6 @@ hf_token = os.getenv("HF_Token")
 novita_key = os.getenv("Novita_key")
 # os.environ['HF_TOKEN'] = hf_token
 
-"Hello World!"
 
 # Set device (use GPU if available, otherwise fallback to CPU)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
