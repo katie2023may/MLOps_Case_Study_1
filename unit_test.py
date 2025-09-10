@@ -5,11 +5,9 @@ import pytest
 # Import directly from app.py
 from app import process_image_and_generate_fen
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
-
 def test_process_real_chessboard_image():
     """Check that a real chessboard image produces a non-empty FEN string."""
-    img_path = os.path.join(DATA_DIR, "example1.png")
+    img_path = os.path.join(PROJECT_ROOT, "example1.png")
     img = Image.open(img_path)
 
     fen = process_image_and_generate_fen(img)
