@@ -417,14 +417,27 @@ def process_image_and_generate_fen(image):
         print(f"No squares to save for the uploaded image.")
         return "Failed to detect a valid chessboard in the image."
 
-# Initialize and load the model once
-MODEL_PATH = "model_100.pth"  # Replace with your actual model path
-if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError(f"Model file '{MODEL_PATH}' not found. Please ensure the path is correct.")
+# # Initialize and load the model once
+# MODEL_PATH = "model_100.pth"  # Replace with your actual model path
+# if not os.path.exists(MODEL_PATH):
+#     raise FileNotFoundError(f"Model file '{MODEL_PATH}' not found. Please ensure the path is correct.")
 
-# Load the model globally once
-model = load_model(MODEL_PATH)
-print("Model loaded successfully.")
+# # Load the model globally once
+# model = load_model(MODEL_PATH)
+# print("Model loaded successfully.")
+
+MODEL_PATH = "model_100.pth"  # Replace with your actual model path
+model = None  # initialize globally
+
+try:
+    if os.path.exists(MODEL_PATH):
+        model = load_model(MODEL_PATH)
+        print("Model loaded successfully.")
+    else:
+        print(f"Warning: Model file '{MODEL_PATH}' not found. Model not loaded.")
+except Exception as e:
+    print(f"Warning: Could not load model at startup: {e}")
+    model = None
 
 def gradio_predict(image):
     fen = process_image_and_generate_fen(image)
