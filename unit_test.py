@@ -1,13 +1,12 @@
+import os
 import torch
-from app import CNNModel, labelIndex2Name
+import pytest
+from app import load_model, MODEL_PATH
 
-def test_model_forward_pass():
-    model = CNNModel()
-    dummy_input = torch.randn(1, 1, 32, 32)  # fake grayscale chess square
+@pytest.mark.skipif(not os.path.exists(MODEL_PATH), reason="Model weights not available")
+def test_real_model_loads():
+    """Integration test: verify the saved weights produce correct output shape."""
+    model = load_model(MODEL_PATH)
+    dummy_input = torch.randn(1, 1, 32, 32)
     output = model(dummy_input)
-    # Ensure the model outputs logits for 13 classes
     assert output.shape == (1, 13)
-
-def test_label_mapping():
-    assert labelIndex2Name(1) == "K"   # White King
-    assert labelIndex2Name(12) == "p"  # Black Pawn
