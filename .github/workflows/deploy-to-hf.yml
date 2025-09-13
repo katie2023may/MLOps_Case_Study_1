@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -16,6 +17,7 @@ jobs:
         run: pytest -s unit_test.py
 
       - name: Push to Hugging Face Space
+        if: success()
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "github-actions"
@@ -28,16 +30,22 @@ jobs:
           git push https://katie2023may:$HF_TOKEN@huggingface.co/spaces/katie2023may/chessboard-recognizer main
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
       - name: Notify Discord
         if: always() # ensures it runs even if tests fail
         run: |
-          payload='{
-            "embeds": [{
-              "title": "GitHub Action Complete",
-              "description": "Repository: **${{ github.repository }}**\nBranch: **${{ github.ref_name }}**\nStatus: **${{ job.status }}**",
-              "color": 3066993
-            }]
-          }'
+          status="${{ job.status }}"
+          payload=$(jq -n \
+            --arg repo "${{ github.repository }}" \
+            --arg branch "${{ github.ref_name }}" \
+            --arg status "$status" \
+            '{
+              "embeds": [{
+                "title": "GitHub Action Complete",
+                "description": ("Repository: **\($repo)**\nBranch: **\($branch)**\nStatus: **\($status)**"),
+                "color": (if $status == "success" then 3066993 else 15158332 end)
+              }]
+            }')
           curl -H "Content-Type: application/json" \
               -d "$payload" \
               ${{ secrets.DISCORD_WEBHOOK_URL }}
