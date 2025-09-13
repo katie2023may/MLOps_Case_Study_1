@@ -13,8 +13,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: install pytest
+        run: pip install pytest
+
       - name: Run unit tests
-        run: pytest
+        run: python -m pytest -s unit_test.py
 
       - name: Push to Hugging Face Space
         if: success()
