@@ -93,7 +93,7 @@ def labelIndex2Name(label_index):
 # Load the saved model
 def load_model(model_path):
     model = CNNModel()  # Instantiate the model
-    model.load_state_dict(torch.load(model_path, map_location=device))  # Load model parameters
+    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False))  # Load model parameters
     model.to(device)
     model.eval()  # Set to evaluation mode
     return model
