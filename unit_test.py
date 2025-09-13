@@ -1,15 +1,12 @@
-import os
 import torch
-import pytest
+from app import CNNModel, labelIndex2Name
 
-def test_real_model_loads():
-    """Integration test: verify the saved weights produce correct output shape."""
-    from app import load_model, MODEL_PATH  # import only when the test runs
-
-    if not os.path.exists(MODEL_PATH):
-        pytest.skip("Model weights not available")
-
-    model = load_model(MODEL_PATH)
+def test_model_forward_pass():
+    model = CNNModel()
     dummy_input = torch.randn(1, 1, 32, 32)
     output = model(dummy_input)
     assert output.shape == (1, 13)
+
+def test_label_mapping():
+    assert labelIndex2Name(1) == "K"
+    assert labelIndex2Name(12) == "p"
