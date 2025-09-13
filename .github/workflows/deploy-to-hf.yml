@@ -42,7 +42,7 @@ jobs:
             '{
               "embeds": [{
                 "title": "GitHub Action Complete",
-                "description": ("Repository: **\($repo)**\nBranch: **\($branch)**\nStatus: **\($status)**"),
+                "description": ("Repository: **\($repo)**\nBranch: **\($branch)**\nStatus: **\($status)** -- notifying dicord! :)"),
                 "color": (if $status == "success" then 3066993 else 15158332 end)
               }]
             }')
