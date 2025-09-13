@@ -18,12 +18,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-
-      - name: Install dependencies
+      - name: Install dependencies and run tests
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
-
-      - name: Run tests
-        run: python -m pytest --maxfail=1 --disable-warnings -q
+          python -m pip install -r requirements.txt
+          python -m pip install pytest
+          python -m pytest --maxfail=1 --disable-warnings -q
