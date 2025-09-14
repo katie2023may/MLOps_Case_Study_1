@@ -16,7 +16,7 @@ load_dotenv(dotenv_path=dotenv_path)
 hf_token = os.getenv("HF_Token")
 novita_key = os.getenv("Novita_key")
 # os.environ['HF_TOKEN'] = hf_token
-
+print("Checking functionality")
 
 # Set device (use GPU if available, otherwise fallback to CPU)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
