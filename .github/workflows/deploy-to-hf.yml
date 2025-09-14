@@ -8,9 +8,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    needs: Run Model Tests
-    if: Success()
-
+    needs: Run_Model_Tests
+    if: ${{ needs.Run_Model_Tests.result == 'success' }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
