@@ -1,4 +1,4 @@
-name: Run Model Tests
+name: Run_Model_Tests
 
 on:
   push:
