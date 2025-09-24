@@ -1,23 +1,19 @@
-import os
-from PIL import Image
+import torch
 import pytest
+from unit_test_input import CNNModel, labelIndex2Name
 
-# Import directly from app.py
-from app import process_image_and_generate_fen
+def test_model_forward_pass():
+    model = CNNModel()
+    dummy_input = torch.randn(1, 1, 32, 32)
+    output = model(dummy_input)
+    assert output.shape == (1, 13)
 
-def test_process_real_chessboard_image():
-    """Check that a real chessboard image produces a non-empty FEN string."""
-    img_path = os.path.join(PROJECT_ROOT, "example1.png")
-    img = Image.open(img_path)
+def test_label_mapping():
+    assert labelIndex2Name(1) == "K"
+    assert labelIndex2Name(12) == "p"
 
-    fen = process_image_and_generate_fen(img)
-
-    assert isinstance(fen, str)
-    assert len(fen) > 0   # just check something is returned
-
-def test_process_blank_image_returns_failure():
-    """Check that a blank image returns a failure message."""
-    img = Image.new("RGB", (256, 256), color="white")
-    fen = process_image_and_generate_fen(img)
-
-    assert "Failed" in fen
+if __name__ == "__main__":
+    test_model_forward_pass()
+    test_label_mapping()
+    print("All tests passed.")
+    

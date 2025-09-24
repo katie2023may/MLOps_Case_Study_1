@@ -16,7 +16,7 @@ load_dotenv(dotenv_path=dotenv_path)
 hf_token = os.getenv("HF_Token")
 novita_key = os.getenv("Novita_key")
 # os.environ['HF_TOKEN'] = hf_token
-
+print("Checking functionality")
 
 # Set device (use GPU if available, otherwise fallback to CPU)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -93,7 +93,7 @@ def labelIndex2Name(label_index):
 # Load the saved model
 def load_model(model_path):
     model = CNNModel()  # Instantiate the model
-    model.load_state_dict(torch.load(model_path, map_location=device))  # Load model parameters
+    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False))  # Load model parameters
     model.to(device)
     model.eval()  # Set to evaluation mode
     return model
@@ -425,6 +425,7 @@ if not os.path.exists(MODEL_PATH):
 # Load the model globally once
 model = load_model(MODEL_PATH)
 print("Model loaded successfully.")
+
 
 def gradio_predict(image):
     fen = process_image_and_generate_fen(image)
