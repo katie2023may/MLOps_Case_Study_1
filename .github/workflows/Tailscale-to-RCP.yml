@@ -1,0 +1,60 @@
+name: Deploy to Remote via Tailscale
+
+# Pieces needed for this to work:
+# 1. COMPLETE A Tailscale account and a machine (RCP) set up with Tailscale
+# 2. An OAuth app created in Tailscale for GitHub Actions
+#    - Follow instructions here: https://tailscale.com/kb/1191/github-actions
+# 3. A Tailscale auth key (can be ephemeral?) created in the Tailscale admin console
+# 4. COMPLETE SSH access set up on the target machine (RCP)
+#    - Ensure the SSH public key is added to the `~/.ssh/authorized_keys` file of the target user on the RCP
+# 5. GitHub Secrets need to be configured:
+#    - TS_OAUTH_CLIENT_ID: From the OAuth app created in Tailscale
+#    - TS_OAUTH_SECRET: From the OAuth app created in Tailscale
+#    - TAILSCALE_AUTHKEY: The Tailscale auth key
+#    - SSH_PRIVATE_KEY: The private SSH key corresponding to the public key added to the RCP
+#    - (100.67.178.115) TARGET_MACHINE_IP: The IP address of the target machine (RCP) as seen in Tailscale
+#    - (student-admin, unless we want to change this to be more secure) REMOTE_USER: The username to use for SSH on the target machine (RCP)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.TARGET_MACHINE_IP }} >> ~/.ssh/known_hosts
+
+      - name: Deploy code to remote machine
+        run: |
+          # Create target directory on remote machine
+          ssh -i ~/.ssh/id_rsa ${{ secrets.REMOTE_USER }}@${{ secrets.TARGET_MACHINE_IP }} \
+            "mkdir -p ~/deployed-code"
+          
+          # Copy code to remote machine
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa" \
+            --exclude='.git' \
+            --exclude='.github' \
+            ./ ${{ secrets.REMOTE_USER }}@${{ secrets.TARGET_MACHINE_IP }}:~/deployed-code/
+
+      - name: Run deployment script (optional)
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.REMOTE_USER }}@${{ secrets.TARGET_MACHINE_IP }} \
+            "cd ~/deployed-code && chmod +x deploy.sh && ./deploy.sh"
