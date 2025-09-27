@@ -124,43 +124,43 @@ def predict_image(image_tensor):
     return predicted.item()
     
 def analyze_fen_with_api(fen: str) -> str:
-    API_URL = "https://router.huggingface.co/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {hf_token}",
-    }
+    # API_URL = "https://router.huggingface.co/v1/chat/completions"
+    # headers = {
+    #     "Authorization": f"Bearer {hf_token}",
+    # }
 
-    def query(payload):
-        response = requests.post(API_URL, headers=headers, json=payload)
-        return response.json()
+    # def query(payload):
+    #     response = requests.post(API_URL, headers=headers, json=payload)
+    #     return response.json()
 
-    response = query({
-        "messages": [
+    # response = query({
+    #     "messages": [
+    #         {
+    #             "role": "user",
+    #             "content": f"analyze this FEN: {fen}"
+    #         }
+    #     ],
+    #     "model": "Qwen/Qwen3-Coder-480B-A35B-Instruct:novita"
+    # })
+
+    # return response['choices'][0]['message']['content']
+
+    client = InferenceClient(
+    provider="novita",
+    api_key=hf_token,
+)
+
+    completion = client.chat.completions.create(
+        model="Qwen/Qwen3-Coder-480B-A35B-Instruct",
+        messages=[
             {
                 "role": "user",
                 "content": f"analyze this FEN: {fen}"
             }
         ],
-        "model": "Qwen/Qwen3-Coder-480B-A35B-Instruct:novita"
-    })
+    )
 
-    return response['choices'][0]['message']['content']
-
-#     client = InferenceClient(
-#     provider="novita",
-#     api_key=os.environ['HF_TOKEN'],
-# )
-
-#     completion = client.chat.completions.create(
-#         model="Qwen/Qwen3-Coder-480B-A35B-Instruct",
-#         messages=[
-#             {
-#                 "role": "user",
-#                 "content": f"analyze this FEN: {fen}"
-#             }
-#         ],
-#     )
-
-#     return (completion.choices[0].message.content)
+    return (completion.choices[0].message.content)
 
 
 
@@ -459,8 +459,8 @@ iface = gr.Interface(
     fn=gradio_predict,
     inputs=gr.Image(type="pil", label="Upload Chessboard Image"),
     outputs=[gr.Markdown(label="FEN and Analysis Links"),
-                        
-             gr.Textbox(label='API output')],  # Changed from gr.Textbox to gr.Markdown
+
+             gr.TextArea(label='API output')],  # Changed from gr.Textbox to gr.Markdown
     title="Chessboard to FEN Converter",
     description=f"Upload an image of a chessboard, and the system will generate the corresponding FEN notation along with links to analyze the position on Lichess and Chess.com using the local model\nThe system will also analyze the FEN using an API call from a LLM",
     examples=[
@@ -468,7 +468,7 @@ iface = gr.Interface(
         ["example2.png"],
         ["example3.png"]
     ],
-    # flagging_mode="never"  # Updated parameter name
+    flagging_mode="never"  # Updated parameter name
 
 )
 
