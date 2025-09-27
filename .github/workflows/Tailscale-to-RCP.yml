@@ -2,9 +2,9 @@ name: Deploy to Remote via Tailscale
 
 # Pieces needed for this to work:
 # 1. COMPLETE A Tailscale account and a machine (RCP) set up with Tailscale
-# 2. An OAuth app created in Tailscale for GitHub Actions
+# 2. COMPLETE An OAuth app created in Tailscale for GitHub Actions
 #    - Follow instructions here: https://tailscale.com/kb/1191/github-actions
-# 3. A Tailscale auth key (can be ephemeral?) created in the Tailscale admin console
+# 3. COMPLETE A Tailscale auth key (can be ephemeral?) created in the Tailscale admin console
 # 4. COMPLETE SSH access set up on the target machine (RCP)
 #    - Ensure the SSH public key is added to the `~/.ssh/authorized_keys` file of the target user on the RCP
 # 5. GitHub Secrets need to be configured:
