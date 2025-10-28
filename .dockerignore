@@ -1,0 +1,21 @@
+# ignore directories and files that should not be included in the Docker build context
+.venv/
+.gradio/
+__pycache__/
+.vscode/
+.github/
+venv/
+
+# files that are not needed in the Docker image
+.gitattributes
+.gitignore
+.DS_Store
+.pytest_cache/
+.ipynb_checkpoints
+# requirements.txt should not be ignored to ensure dependencies are installed
+Discord Screenshot.png
+discord_image.png
+image (4).png
+Teams Integration Example.png
+unit_test_input.py
+unit_test.py
