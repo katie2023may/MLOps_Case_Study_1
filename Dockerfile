@@ -2,15 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /opt/app
 
-COPY requirements.txt ./
+COPY . .
+RUN ls -la
 
 # Upgrade pip to the latest version
 RUN pip install --upgrade pip
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
+RUN pip install --no-cache-dir -r /opt/app/requirements.txt
 
 # Install packages that we need. vim is for helping with debugging
 ENV DEBIAN_FRONTEND=noninteractive
