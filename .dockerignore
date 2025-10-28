@@ -1,0 +1,20 @@
+# ignore all directories
+**/
+# except the app directory
+!app/
+# ignore all .pyc files
+**/*.pyc
+# ignore all .pyo files
+**/*.pyo
+# ignore all __pycache__ directories
+**/__pycache__/
+# ignore other files
+Discord Screenshot.png
+discord_image.png
+image (4).png
+gitattributes
+.gitignore
+server_connect.sh
+Teams Integration Example.png
+unit_test_input.py
+unit_test.py
