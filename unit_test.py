@@ -1,5 +1,5 @@
 import torch
-import pytest
+import pytest   
 from unit_test_input import CNNModel, labelIndex2Name
 
 def test_model_forward_pass():
