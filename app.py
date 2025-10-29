@@ -1,4 +1,5 @@
 import os
+from time import time
 import cv2
 import numpy as np
 from PIL import Image
@@ -6,10 +7,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import gradio as gr
+import time
 import urllib.parse
 from dotenv import find_dotenv, load_dotenv
 from huggingface_hub import InferenceClient
 import requests
+from prometheus_client import start_http_server, Counter, Summary, Gauge
+
+# Prometheus metrics
+REQUEST_COUNTER = Counter('app_requests_total', 'Total number of requests')
+SUCCESSFUL_REQUESTS = Counter('app_successful_requests_total', 'Total number of successful requests')
+FAILED_REQUESTS = Counter('app_failed_requests_total', 'Total number of failed requests')
+REQUEST_DURATION = Summary('app_request_duration_seconds', 'Time spent processing request')
+TRIVIAL_CHESSBOARD_DETECTIONS = Counter('trivial_chessboard_detections_total', 'Total number of trivial chessboard detections')
+NON_TRIVIAL_CHESSBOARD_DETECTIONS = Counter('non_trivial_chessboard_detections_total', 'Total number of non-trivial chessboard detections')
+API_TOKENS_USED = Gauge('api_tokens_used', 'Number of API tokens used')
 
 dotenv_path = find_dotenv()
 load_dotenv(dotenv_path=dotenv_path)
@@ -428,11 +440,19 @@ print("Model loaded successfully.")
 
 
 def gradio_predict(image):
+    REQUEST_COUNTER.inc()  # Increment the request counter
+    start_time = time.perf_counter()  # Start the request timer
+
     fen = process_image_and_generate_fen(image)
     if fen.startswith("Failed"):
         # Return the error message as-is in Markdown
+        FAILED_REQUESTS.inc()  # Increment the failed requests counter  
         return f"**Error:** {fen}"
     else:
+        if fen.find("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") != -1:
+            TRIVIAL_CHESSBOARD_DETECTIONS.inc()
+        else:
+            NON_TRIVIAL_CHESSBOARD_DETECTIONS.inc()
         # URL-encode the FEN string to ensure it's safe for URLs
         fen_encoded = urllib.parse.quote(fen)
         
@@ -451,7 +471,11 @@ def gradio_predict(image):
             - [🔍 Analyze on Lichess]({lichess_url})
             - [🔍 Analyze on Chess.com]({chesscom_url})
         """
+
         api_output = analyze_fen_with_api(fen)
+        API_TOKENS_USED.set(len(api_output.split()))  # Update the gauge with the number of tokens used
+        SUCCESSFUL_REQUESTS.inc()  # Increment the successful requests counter
+        REQUEST_DURATION.observe(time.perf_counter() - start_time)  # Observe the request duration
         return markdown_output, api_output
 
 # Create Gradio Interface
@@ -472,6 +496,12 @@ iface = gr.Interface(
 
 )
 
+# # Launch the interface
+# iface.launch(share=True)
 
-# Launch the interface
-iface.launch(share=True)
+if __name__ == "__main__":
+    # Start Prometheus metrics server
+    start_http_server(8000)
+    print("Prometheus metrics server started on port 8000")
+    # Launch Gradio interface
+    iface.launch(share=True)
