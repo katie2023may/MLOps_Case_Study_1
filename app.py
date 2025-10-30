@@ -12,7 +12,7 @@ import urllib.parse
 from dotenv import find_dotenv, load_dotenv
 from huggingface_hub import InferenceClient
 import requests
-from prometheus_client import start_http_server, Counter, Summary, Gauge
+from prometheus_client import start_http_server, Counter, Summary, Gauge, Histogram
 
 # Prometheus metrics
 REQUEST_COUNTER = Counter('app_requests_total', 'Total number of requests')
@@ -21,7 +21,7 @@ FAILED_REQUESTS = Counter('app_failed_requests_total', 'Total number of failed r
 REQUEST_DURATION = Summary('app_request_duration_seconds', 'Time spent processing request')
 TRIVIAL_CHESSBOARD_DETECTIONS = Counter('trivial_chessboard_detections_total', 'Total number of trivial chessboard detections')
 NON_TRIVIAL_CHESSBOARD_DETECTIONS = Counter('non_trivial_chessboard_detections_total', 'Total number of non-trivial chessboard detections')
-API_TOKENS_USED = Gauge('api_tokens_used', 'Number of API tokens used')
+API_TOKENS_USED = Histogram('api_tokens_used', 'Number of API tokens used', buckets=(50, 100,150, 200, 250, 300, 350, float("inf")))
 
 dotenv_path = find_dotenv()
 load_dotenv(dotenv_path=dotenv_path)
@@ -136,43 +136,43 @@ def predict_image(image_tensor):
     return predicted.item()
     
 def analyze_fen_with_api(fen: str) -> str:
-    # API_URL = "https://router.huggingface.co/v1/chat/completions"
-    # headers = {
-    #     "Authorization": f"Bearer {hf_token}",
-    # }
+    API_URL = "https://router.huggingface.co/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {hf_token}",
+    }
 
-    # def query(payload):
-    #     response = requests.post(API_URL, headers=headers, json=payload)
-    #     return response.json()
+    def query(payload):
+        response = requests.post(API_URL, headers=headers, json=payload)
+        return response.json()
 
-    # response = query({
-    #     "messages": [
-    #         {
-    #             "role": "user",
-    #             "content": f"analyze this FEN: {fen}"
-    #         }
-    #     ],
-    #     "model": "Qwen/Qwen3-Coder-480B-A35B-Instruct:novita"
-    # })
-
-    # return response['choices'][0]['message']['content']
-
-    client = InferenceClient(
-    provider="novita",
-    api_key=hf_token,
-)
-
-    completion = client.chat.completions.create(
-        model="Qwen/Qwen3-Coder-480B-A35B-Instruct",
-        messages=[
+    response = query({
+        "messages": [
             {
                 "role": "user",
                 "content": f"analyze this FEN: {fen}"
             }
         ],
-    )
+        "model": "Qwen/Qwen3-Coder-480B-A35B-Instruct:novita"
+    })
 
-    return (completion.choices[0].message.content)
+    return response['choices'][0]['message']['content']
+
+#     client = InferenceClient(
+#     provider="novita",
+#     api_key=hf_token,
+# )
+
+#     completion = client.chat.completions.create(
+#         model="Qwen/Qwen3-Coder-480B-A35B-Instruct",
+#         messages=[
+#             {
+#                 "role": "user",
+#                 "content": f"analyze this FEN: {fen}"
+#             }
+#         ],
+#     )
+
+#     return (completion.choices[0].message.content)
 
 
 
@@ -473,8 +473,9 @@ def gradio_predict(image):
         """
 
         api_output = analyze_fen_with_api(fen)
-        API_TOKENS_USED.set(len(api_output.split()))  # Update the gauge with the number of tokens used
+        API_TOKENS_USED.observe(len(api_output.split()))  # Observe the number of tokens used
         SUCCESSFUL_REQUESTS.inc()  # Increment the successful requests counter
+       
         REQUEST_DURATION.observe(time.perf_counter() - start_time)  # Observe the request duration
         return markdown_output, api_output
 

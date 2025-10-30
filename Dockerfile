@@ -3,7 +3,6 @@ FROM python:3.11-slim
 WORKDIR /opt/app
 
 COPY . .
-RUN ls -la
 
 # Upgrade pip to the latest version
 RUN pip install --upgrade pip
@@ -23,4 +22,4 @@ EXPOSE 8000
 EXPOSE 9100
 ENV GRADIO_SERVER_NAME="0.0.0.0"
 
-CMD ["python", "/opt/app/app.py"]
+CMD bash -c "prometheus-node-exporter --web.listen-address=':9100' & python /opt/app/app.py"
