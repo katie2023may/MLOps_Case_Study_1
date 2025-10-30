@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  - job_name: "group_2_product"
+    static_configs:
+      - targets: ["group_2_product:8000"] # Gradio metrics
+
+  - job_name: "node_exporter"
+    static_configs:
+      - targets: ["group_2_product:9100"] # Node Exporter
