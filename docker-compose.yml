@@ -2,6 +2,7 @@
 
 services:
   group_2_product:
+    image: chadhucey/group_2_product:v1.0.0
     build:
       context: .
       dockerfile: Dockerfile
