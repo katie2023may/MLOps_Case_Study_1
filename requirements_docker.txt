@@ -1,0 +1,12 @@
+--find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+torch==2.2.1+cpu
+# torchvision==0.24.1+cpu
+numpy
+opencv-python-headless
+pillow
+gradio
+python-dotenv
+huggingface_hub
+pytest
+requests
+prometheus-client
