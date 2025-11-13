@@ -5,6 +5,8 @@ __pycache__/
 .vscode/
 .github/
 venv/
+logs/
+prometheus/
 
 # files that are not needed in the Docker image
 .gitattributes
@@ -19,3 +21,7 @@ image (4).png
 Teams Integration Example.png
 unit_test_input.py
 unit_test.py
+server_connect.sh
+prometheus.yml
+docker-compose.yml
+
