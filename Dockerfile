@@ -64,7 +64,7 @@ COPY example3.png /opt/app/
 # If you have additional modules or packages, copy them explicitly or
 # uncomment the following line to copy the repo (but ensure .dockerignore is configured)
 # COPY . /opt/app
-
+COPY .env /opt/app/
 COPY app.py /opt/app/
 # # Create a non-root user for running the app
 # RUN groupadd -r app && useradd -r -g app app \
