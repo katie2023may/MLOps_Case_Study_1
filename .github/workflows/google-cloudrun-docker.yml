@@ -32,28 +32,28 @@ jobs:
           workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
           project_id: '${{ env.PROJECT_ID }}'
 
-      # DEBUG: decode the OIDC id_token payload and print claims to help troubleshooting
-      - name: 'Decode OIDC id_token payload (debug)'
-        if: always()
-        run: |
-          # Decode JWT payload safely and pretty-print JSON (no private keys printed).
-          # This prints only the JWT payload (claims) so you can inspect repository/sub/issuer/etc.
-          python - <<'PY'
-          import os, json, base64
-          tok = os.getenv("ID_TOKEN", "")
-          if not tok:
-              print("No id_token found in steps.auth.outputs.id_token")
-          else:
-              try:
-                  payload = tok.split(".")[1]
-                  padding = '=' * (-len(payload) % 4)
-                  decoded = base64.urlsafe_b64decode(payload + padding).decode()
-                  print(json.dumps(json.loads(decoded), indent=2))
-              except Exception as e:
-                  print("Failed to decode token payload:", e)
-          PY
-                  env:
-                    ID_TOKEN: ${{ steps.auth.outputs.id_token }}
+      # # DEBUG: decode the OIDC id_token payload and print claims to help troubleshooting
+      # - name: 'Decode OIDC id_token payload (debug)'
+      #   if: always()
+      #   run: |
+      #     # Decode JWT payload safely and pretty-print JSON (no private keys printed).
+      #     # This prints only the JWT payload (claims) so you can inspect repository/sub/issuer/etc.
+      #     python - <<'PY'
+      #     import os, json, base64
+      #     tok = os.getenv("ID_TOKEN", "")
+      #     if not tok:
+      #         print("No id_token found in steps.auth.outputs.id_token")
+      #     else:
+      #         try:
+      #             payload = tok.split(".")[1]
+      #             padding = '=' * (-len(payload) % 4)
+      #             decoded = base64.urlsafe_b64decode(payload + padding).decode()
+      #             print(json.dumps(json.loads(decoded), indent=2))
+      #         except Exception as e:
+      #             print("Failed to decode token payload:", e)
+      #     PY
+      #             env:
+      #               ID_TOKEN: ${{ steps.auth.outputs.id_token }}
 
       - name: 'Docker Auth'
         uses: 'docker/login-action@v3'
