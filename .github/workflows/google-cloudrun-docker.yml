@@ -30,7 +30,7 @@ jobs:
         uses: 'google-github-actions/auth@v3'
         with:
           workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
-          project_id: '${{ env.PROJECT_ID }}'
+          # project_id: '${{ env.PROJECT_ID }}'
 
       # # DEBUG: decode the OIDC id_token payload and print claims to help troubleshooting
       # - name: 'Decode OIDC id_token payload (debug)'
