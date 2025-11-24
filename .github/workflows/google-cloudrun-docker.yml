@@ -42,7 +42,7 @@ env:
   WORKLOAD_IDENTITY_PROVIDER: 'projects/1042405537464/locations/global/workloadIdentityPools/github2/providers/my-repo' # TODO: update to your workload identity provider
 
 jobs:
-  deploy:
+  deploy_to_gcp:
     runs-on: 'ubuntu-latest'
 
     permissions:
