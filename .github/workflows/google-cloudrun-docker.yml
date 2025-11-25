@@ -11,7 +11,7 @@ env:
   REGION: 'us-central1'
   SERVICE: 'group_2_product'
   PORT: '7860'
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/1042405537464/locations/global/workloadIdentityPools/github2/providers/my-repo'
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/1042405537464/locations/global/workloadIdentityPools/github3/providers/my-repo'
 
 jobs:
   deploy_to_gcp:
