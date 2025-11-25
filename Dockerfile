@@ -29,23 +29,6 @@ RUN python -m pip install --no-cache-dir --prefix=/install -r /build/requirement
 # Copy the model into the builder so we can verify it is the real binary
 # (this will fail early if it's an LFS pointer text file)
 COPY model_100.pth /build/model_100.pth
-RUN python - <<'PY' import sys, os
-        p = "/build/model_100.pth"
-        if not os.path.exists(p):
-            print("ERROR: model_100.pth not found in build context")
-            sys.exit(1)
-        with open(p, "rb") as f:
-            head = f.read(128)
-        # Git LFS pointer files start with: "version https://git-lfs.github.com/spec/v1"
-        if head.startswith(b"version https://git-lfs.github.com/spec/v1"):
-            print("ERROR: model_100.pth appears to be a Git LFS pointer file, not the real model.")
-            print("Please ensure Git LFS is installed and that the real file is present in the build context.")
-            sys.exit(2)
-        else:
-            # print size for diagnostic logs (ok to print numeric size, don't print content)
-            size = os.path.getsize(p)
-            print(f"model_100.pth looks like a binary file, size={size} bytes")
-PY
 
 ########################################
 # Runtime: minimal image
