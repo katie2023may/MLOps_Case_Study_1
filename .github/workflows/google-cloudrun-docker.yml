@@ -9,7 +9,7 @@ on:
 env:
   PROJECT_ID: 'csds553-case-study-4'
   REGION: 'us-central1'
-  SERVICE: 'group_2_product'
+  SERVICE: 'group-2-product'
   PORT: '7860'
   WORKLOAD_IDENTITY_PROVIDER: 'projects/1042405537464/locations/global/workloadIdentityPools/github3/providers/my-repo'
 
