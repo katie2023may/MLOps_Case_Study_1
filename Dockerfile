@@ -1,17 +1,10 @@
 # syntax=docker/dockerfile:experimental
 ########################################
 # Multi-stage, multi-platform Dockerfile
-# - builder: installs Python deps into /install
+# - builder: installs Python deps into /install and validates model file
 # - runtime: small final image, copies only runtime files
 ########################################
 
-# Note: we avoid using --platform=$BUILDPLATFORM in the FROM lines to remain
-# compatible with a wider range of builders. Use `docker buildx` with
-# --platform when you need multi-arch manifests; buildx will handle emulation.
-
-########################################
-# Builder: install Python deps (kept out of final image)
-########################################
 FROM python:3.11-slim AS builder
 
 WORKDIR /build
@@ -32,6 +25,29 @@ COPY requirements_docker.txt /build/requirements_docker.txt
 RUN python -m pip install --upgrade pip setuptools wheel
 # Install into an isolated prefix so we can copy only runtime files later
 RUN python -m pip install --no-cache-dir --prefix=/install -r /build/requirements_docker.txt
+
+# Copy the model into the builder so we can verify it is the real binary
+# (this will fail early if it's an LFS pointer text file)
+COPY model_100.pth /build/model_100.pth
+RUN python - <<'PY'
+import sys, os
+p = "/build/model_100.pth"
+if not os.path.exists(p):
+    print("ERROR: model_100.pth not found in build context")
+    sys.exit(1)
+with open(p, "rb") as f:
+    head = f.read(128)
+# Git LFS pointer files start with: "version https://git-lfs.github.com/spec/v1"
+if head.startswith(b"version https://git-lfs.github.com/spec/v1"):
+    print("ERROR: model_100.pth appears to be a Git LFS pointer file, not the real model.")
+    print("Please ensure Git LFS is installed and that the real file is present in the build context.")
+    sys.exit(2)
+else:
+    # print size for diagnostic logs (ok to print numeric size, don't print content)
+    size = os.path.getsize(p)
+    print(f"model_100.pth looks like a binary file, size={size} bytes")
+PY
+
 ########################################
 # Runtime: minimal image
 ########################################
@@ -52,27 +68,16 @@ RUN apt-get update \
 # Copy installed Python packages from builder
 COPY --from=builder /install /usr/local
 
-# Copy application files (use .dockerignore to exclude large files like model)
-# Copy explicitly to keep layers small
-COPY model_100.pth /opt/app/
+# Copy validated model from builder
+COPY --from=builder /build/model_100.pth /opt/app/
+
+# Copy remaining application files
 COPY example1.png /opt/app/
 COPY example2.png /opt/app/
 COPY example3.png /opt/app/
-# If you have additional small helper scripts, copy them explicitly, e.g.
-# COPY server_connect.sh /opt/app/
-# COPY requirements.txt /opt/app/
-# If you have additional modules or packages, copy them explicitly or
-# uncomment the following line to copy the repo (but ensure .dockerignore is configured)
-# COPY . /opt/app
-# COPY .env /opt/app/
 COPY app.py /opt/app/
-# # Create a non-root user for running the app
-# RUN groupadd -r app && useradd -r -g app app \
-#  && chown -R app:app /opt/app
 
 EXPOSE 7860 8000 9100
-
-# USER app
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["python", "/opt/app/app.py"]
