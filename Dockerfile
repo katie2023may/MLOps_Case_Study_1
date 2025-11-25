@@ -29,8 +29,7 @@ RUN python -m pip install --no-cache-dir --prefix=/install -r /build/requirement
 # Copy the model into the builder so we can verify it is the real binary
 # (this will fail early if it's an LFS pointer text file)
 COPY model_100.pth /build/model_100.pth
-RUN python - <<'PY'
-        import sys, os
+RUN python - <<'PY' import sys, os
         p = "/build/model_100.pth"
         if not os.path.exists(p):
             print("ERROR: model_100.pth not found in build context")
