@@ -1,4 +1,4 @@
-# Build and Deploy to Cloud Run (debugging token claims added)
+# Build and Deploy to Cloud Run (fixed image name)
 name: 'Build and Deploy to Cloud Run'
 
 on:
@@ -9,7 +9,9 @@ on:
 env:
   PROJECT_ID: 'csds553-case-study-4'
   REGION: 'us-central1'
-  SERVICE: 'group-2-product'
+  REPOSITORY: 'group-2-product'        # Artifact Registry repository name
+  IMAGE: 'app'                         # Image name inside the repository (choose any)
+  SERVICE: 'group-2-product'           # Cloud Run service name (can be same or different)
   PORT: '7860'
   WORKLOAD_IDENTITY_PROVIDER: 'projects/1042405537464/locations/global/workloadIdentityPools/github3/providers/my-repo'
 
@@ -32,29 +34,6 @@ jobs:
           workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
           # project_id: '${{ env.PROJECT_ID }}'
 
-      # # DEBUG: decode the OIDC id_token payload and print claims to help troubleshooting
-      # - name: 'Decode OIDC id_token payload (debug)'
-      #   if: always()
-      #   run: |
-      #     # Decode JWT payload safely and pretty-print JSON (no private keys printed).
-      #     # This prints only the JWT payload (claims) so you can inspect repository/sub/issuer/etc.
-      #     python - <<'PY'
-      #     import os, json, base64
-      #     tok = os.getenv("ID_TOKEN", "")
-      #     if not tok:
-      #         print("No id_token found in steps.auth.outputs.id_token")
-      #     else:
-      #         try:
-      #             payload = tok.split(".")[1]
-      #             padding = '=' * (-len(payload) % 4)
-      #             decoded = base64.urlsafe_b64decode(payload + padding).decode()
-      #             print(json.dumps(json.loads(decoded), indent=2))
-      #         except Exception as e:
-      #             print("Failed to decode token payload:", e)
-      #     PY
-      #             env:
-      #               ID_TOKEN: ${{ steps.auth.outputs.id_token }}
-
       - name: 'Docker Auth'
         uses: 'docker/login-action@v3'
         with:
@@ -64,7 +43,8 @@ jobs:
 
       - name: 'Build and Push Container'
         run: |
-          DOCKER_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}"
+          DOCKER_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}"
+          echo "Building and pushing image: ${DOCKER_TAG}"
           docker build --tag "${DOCKER_TAG}" .
           docker push "${DOCKER_TAG}"
 
@@ -73,11 +53,10 @@ jobs:
         with:
           service: '${{ env.SERVICE }}'
           region: '${{ env.REGION }}'
-          image: '${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}'
+          image: '${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}'
           service_port: '${{ env.PORT }}'
           public: true
 
       - name: 'Show output'
         run: |
           echo "${{ steps.deploy.outputs.url }}"
-#test
