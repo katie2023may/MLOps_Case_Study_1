@@ -3,7 +3,8 @@ name: Build and Deploy to Cloud Run (with Secret Manager)
 
 on:
   push:
-    branches: [ main ]
+    branches: 
+    - main
 
 env:
   PROJECT_ID: 'csds553-case-study-4'
