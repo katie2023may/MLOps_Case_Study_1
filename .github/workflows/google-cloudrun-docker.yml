@@ -67,3 +67,4 @@ jobs:
             --set-secrets "${{ env.SECRET_ENV_VAR }}=${{ env.SECRET_NAME }}:latest" \
             --port="${{ env.PORT }}" \
             --allow-unauthenticated
+#test
