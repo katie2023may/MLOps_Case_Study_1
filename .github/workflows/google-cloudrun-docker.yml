@@ -1,65 +1,68 @@
-# Build and Deploy to Cloud Run (fixed project specification)
-name: 'Build and Deploy to Cloud Run'
+# Build and Deploy to Cloud Run (Secret Manager: HF_Token injected as HF_TOKEN)
+name: Build and Deploy to Cloud Run (with Secret Manager)
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 env:
   PROJECT_ID: 'csds553-case-study-4'
   REGION: 'us-central1'
-  REPOSITORY: 'group-2-product'        # Artifact Registry repository name
-  IMAGE: 'app'                         # Image name inside the repository (choose any)
-  SERVICE: 'group-2-product'           # Cloud Run service name (can be same or different)
+  REPOSITORY: 'group-2-product'
+  IMAGE: 'app'
+  SERVICE: 'group-2-product'
   PORT: '7860'
   WORKLOAD_IDENTITY_PROVIDER: 'projects/1042405537464/locations/global/workloadIdentityPools/github3/providers/my-repo'
+  RUNTIME_SA: 'group2-run-sa@csds553-case-study-4.iam.gserviceaccount.com'
+  SECRET_NAME: 'HF_Token'     # Secret Manager entry name
+  SECRET_ENV_VAR: 'HF_TOKEN'  # Env var that will appear inside the container
 
 jobs:
   deploy_to_gcp:
-    runs-on: 'ubuntu-latest'
-
+    runs-on: ubuntu-latest
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write
 
     steps:
-      - name: 'Checkout'
-        uses: 'actions/checkout@v4'
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - id: 'auth'
-        name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v3'
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
         with:
-          workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
-          project_id: '${{ env.PROJECT_ID }}'
+          workload_identity_provider: ${{ env.WORKLOAD_ID_PROVIDER || env.WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ env.PROJECT_ID }}
 
-      - name: 'Docker Auth'
-        uses: 'docker/login-action@v3'
+      - name: Configure gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
         with:
-          username: 'oauth2accesstoken'
-          password: '${{ steps.auth.outputs.auth_token }}'
-          registry: '${{ env.REGION }}-docker.pkg.dev'
+          project_id: ${{ env.PROJECT_ID }}
 
-      - name: 'Build and Push Container'
+      - name: Docker Auth
+        uses: docker/login-action@v3
+        with:
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.auth_token }}
+          registry: ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build and push image
         run: |
-          DOCKER_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}"
-          echo "Building and pushing image: ${DOCKER_TAG}"
-          docker build --tag "${DOCKER_TAG}" .
-          docker push "${DOCKER_TAG}"
+          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}"
+          echo "Building and pushing image: $IMAGE_URI"
+          docker build --tag "$IMAGE_URI" .
+          docker push "$IMAGE_URI"
 
-      - id: 'deploy'
-        name: 'Deploy to Cloud Run'
-        uses: 'google-github-actions/deploy-cloudrun@v2'
-        with:
-          project_id: '${{ env.PROJECT_ID }}'       # <--- ensure gcloud knows the project
-          service: '${{ env.SERVICE }}'
-          region: '${{ env.REGION }}'
-          image: '${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}'
-          service_port: '${{ env.PORT }}'
-          public: true
-
-      - name: 'Show output'
+      - id: deploy
+        name: Deploy to Cloud Run (inject HF_Token)
         run: |
-          echo "${{ steps.deploy.outputs.url }}"
-
+          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}:${{ github.sha }}"
+          gcloud run deploy "${{ env.SERVICE }}" \
+            --image="$IMAGE_URI" \
+            --region="${{ env.REGION }}" \
+            --project="${{ env.PROJECT_ID }}" \
+            --service-account="${{ env.RUNTIME_SA }}" \
+            --set-secrets "${{ env.SECRET_ENV_VAR }}=${{ env.SECRET_NAME }}:latest" \
+            --port="${{ env.PORT }}" \
+            --allow-unauthenticated
